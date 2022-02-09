@@ -200,11 +200,22 @@ public class Prueba {
 		}
 	}
 
+	// Examen 6 Ejercicio 4
+	/**
+	 * Función que devuelve una cadena de caracteres con el formato siguiente:
+	 * <idPrueba>”. ”<nombre>” (”<fecha(dd/mm/YYYY>”) en <lugarPrueba>) de tipo
+	 * <individual/colectiva> Si la prueba dispone de equipo arbitral se mostraran
+	 * los nrombres del equipo aribitral, y ademas si la prueba esta cerrada se
+	 * mostraran los resultados de la siguente forma: "Primer puesto:
+	 * "<idParticipante>", con el dorsal <"dorsal>" por la calle "<calle> Oro#"
+	 * <idOro>"." “Segundo puesto: “<idParticipante>”, con el dorsal “<dorsal>” por
+	 * la calle “<calle>” Plata#<idPlata> “Tercer puesto: “<idParticipante>”, con el
+	 * dorsal “<dorsal>” por la calle “<calle> Bronce#<idBronc>
+	 */
 	@Override
 	public String toString() {
-		return "Prueba [id=" + id + ", nombre=" + nombre + ", fecha=" + fecha + ", individual=" + individual
-				+ ", lugar=" + lugar + ", arbitraje=" + Arrays.toString(arbitraje) + ", resultado=" + resultado
-				+ ", participantes=" + Arrays.toString(participantes) + "]";
+		return "" + id + ". " + nombre + " (" + fecha + ") en " + lugar + " de tipo " + individual + ", arbitraje="
+				+ Arrays.toString(arbitraje) + ", resultado: \n" + resultado + ": " + Arrays.toString(participantes);
 	}
 
 	// Ejercicio 2, parte B
