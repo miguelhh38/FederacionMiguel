@@ -1,10 +1,17 @@
 package principal;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 
 import entidades.*;
@@ -258,11 +265,153 @@ public class Principal4 {
 			break;
 		case 2: // opción 2.2
 			System.out.println("Ha seleccionado INSCRIPCIÓN de EQUIPO en PRUEBA.");
+			Equipo nuevo = Equipo.nuevoEquipo();
+			System.out.println("Se ha inscrito el equipo correctamente: " + nuevo);
+			/// Se muestran las pruebas COLECTIVAS importadas desde el fichero de
+			/// caracteres pruebas.txt
+			valido = false;
+			Prueba[] colectivas = new Prueba[256];
+			File fichero = new File("pruebas.txt");
+			FileReader lector = null;
+			BufferedReader buffer = null;
+			int i = 0; /// contador de pruebas COLECTIVAS
+			try {
+				try {
+					lector = new FileReader(fichero);
+					buffer = new BufferedReader(lector);
+					String linea;
+					while ((linea = buffer.readLine()) != null) {
+						String[] campos = linea.split("\\|");
+						long idPrueba = Long.valueOf(campos[0]);
+						String nombrePrueba = campos[1];
+						LocalDate fecha = LocalDate.parse(campos[2], DateTimeFormatter.ofPattern("dd/MM/YYYY"));
+						String lugarString = campos[3];
+						/// Hay que convertir el String con el lugar a su correspondiente valor de la
+						/// enum Lugar
+						Lugar lugar = null;
+						for (Lugar l : Lugar.values()) {
+							if (l.name().equalsIgnoreCase(lugarString)) {
+								lugar = l;
+							}
+						}
+						boolean individual = Boolean.valueOf(campos[4]);
+						Prueba p = new Prueba(idPrueba, nombrePrueba, fecha, lugar, individual);
+						/// Solo se muestran al usuario las pruebas individuales, que se van guardando
+						/// en el array individuales
+						if (!p.isIndividual()) {
+							System.out.println("" + p);
+							colectivas[i] = p;
+							i++;
+						}
+					}
+				} finally {
+					if (buffer != null) {
+						buffer.close();
+					}
+					if (lector != null) {
+						lector.close();
+					}
+				}
+			} catch (FileNotFoundException e) {
+				System.out.println("Se ha producido una FileNotFoundException" + e.getMessage());
+			} catch (IOException e) {
+				System.out.println("Se ha producido una IOException" + e.getMessage());
+			} catch (Exception e) {
+				System.out.println("Se ha producido una Exception" + e.getMessage());
+			}
+			/// Se pide al usuario que elija una de las pruebas y se comprueba que es un
+			/// valor correcto
+			Prueba pruebaSelecc = null;
+			do {
+				System.out.println("Introduzca el id de la prueba en que desea inscribirse:");
+				subelecc = in.nextInt();
+				for (int j = 0; j < i; j++) {
+					if (((Prueba) colectivas[j]).getId() == subelecc) {
+						/// El valor introducido es alguno de los idPrueba individuales
+						pruebaSelecc = colectivas[j];
+						valido = true;
+						break;
+					}
+				}
+				if (!valido) {
+					System.out.println("El valor " + subelecc
+							+ " no es válido. Se le mostrarán de nuevo las pruebas colectivas:");
+					for (Prueba aux : colectivas) {
+						if (aux != null) {
+							System.out.println("" + aux);
+						}
+					}
+				} else {
+					System.out.println("Se ha elegido la prueba de id:" + subelecc + ". ¿Es correcto?");
+					if (valido = Utilidades.leerBoolean()) {
+						break; /// confirmacion de idPrueba seleccionado correcto
+					} else {
+						System.out.println("Se le mostrarán de nuevo las pruebas individuales:");
+						for (Prueba aux : colectivas) {
+							if (aux != null) {
+								System.out.println("" + aux);
+							}
+						}
+					}
+				}
+			} while (!valido);
+			/// Ahora se crea el fichero con la inscripcion
+			valido = false;
+			String path = "inscrip_" + pruebaSelecc.getId() + "_" + nuevo.getManager().getPersona().getNifnie() + ".dat";
+			try {
+				FileOutputStream ficheroInscrip = new FileOutputStream(path, false);
+				ObjectOutputStream escritor = new ObjectOutputStream(ficheroInscrip);
+				escritor.writeObject((Equipo) nuevo);
+				escritor.writeObject((Long) pruebaSelecc.getId());
+				LocalDateTime ahora = LocalDateTime.now();
+				escritor.writeObject((LocalDateTime) ahora);
+				escritor.flush();
+				valido = true;
+				escritor.close();
+			} catch (FileNotFoundException e) {
+				System.out.println("Se ha producido una FileNotFoundException" + e.getMessage());
+			} catch (IOException e) {
+				System.out.println("Se ha producido una IOException" + e.getMessage());
+			} catch (Exception e) {
+				System.out.println("Se ha producido una Exception" + e.getMessage());
+			}
+			/// Si el fichero se creó exitosamente, se lee su contenido y se muestra el
+			/// mensaje
+			if (!valido) {
+				System.out.println("ERROR: No se creó el fichero con la inscripcion.");
+			} else {
+				try {
+					File ficheroLeido = new File(path);
+					FileInputStream ficheroInscrip = new FileInputStream(ficheroLeido);
+					ObjectInputStream lectorFichInsc = new ObjectInputStream(ficheroInscrip);
+					Equipo equipoLeido = (Equipo) lectorFichInsc.readObject();
+					Long idPruebaLeido = (Long) lectorFichInsc.readObject();
+					LocalDateTime fechahoraLeida = (LocalDateTime) lectorFichInsc.readObject();
+					System.out.println("Se ha creado el fichero " + path + " a "
+							+ fechahoraLeida.format(DateTimeFormatter.ofPattern("dd/MM/YY hh:mm:ss"))
+							+ ", en el que el equipo " + equipoLeido.getId() + " representado por" 
+							+ equipoLeido.getManager().getPersona().getNombre() + " ( NIF/NIE: "
+							+ equipoLeido.getManager().getPersona().getNifnie() + " queda" + "inscrito en la prueba "
+							+ idPruebaLeido + " de nombre " + pruebaSelecc.getNombre() + " a celebrar en "
+							+ pruebaSelecc.getLugar().getNombre() + " el día "
+							+ pruebaSelecc.getFecha().format(DateTimeFormatter.ofPattern("dd/MM/YYYY")) + ".");
+					valido = true;
+					lectorFichInsc.close();
+				} catch (FileNotFoundException e) {
+					System.out.println("Se ha producido una FileNotFoundException" + e.getMessage());
+				} catch (IOException e) {
+					System.out.println("Se ha producido una IOException" + e.getMessage());
+				} catch (Exception e) {
+					System.out.println("Se ha producido una Exception" + e.getMessage());
+				}
+			}
+
 			break;
 		default:
 		}
-		System.out.println("Volviendo al menú de MÁNAGERS...\n\n");
+		System.out.println("Volviendo al menú de MANAGERS...\n\n");
 	}
+
 
 	private static void mostrarSubmenuAtleta(int elecc) {
 		Scanner in = new Scanner(System.in);
